@@ -11,12 +11,18 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import info.moroff.base.logging.Utils;
 
 public class JavaArchivePatcher {
+	Logger logger;
 	String tempFolder;
 	
 	
 	public JavaArchivePatcher() {
+		logger = Utils.setupAndCreateLogger(getClass());
 	}
 
 	public static void main(String[] args) {
@@ -40,7 +46,7 @@ public class JavaArchivePatcher {
 	}
 
 	public FileSystem open(URI earFileURI) throws IOException {
-		System.out.println("open "+earFileURI.toString());
+		logger.fine("open "+earFileURI.toString());
 		Map<String, String> env = new HashMap<>();
 		
 		return FileSystems.newFileSystem(URI.create("jar:"+earFileURI.toString()), env);
@@ -51,11 +57,10 @@ public class JavaArchivePatcher {
 			FileSystem earFS = open(earFileName);
 			
 			for (Path earElement : earFS.getRootDirectories()) {
-				System.out.println(earElement.toString());
+				logger.fine(earElement.toString());
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.log(Level.SEVERE, e.getLocalizedMessage(), e);
 		} finally {
 			
 		}
@@ -67,8 +72,7 @@ public class JavaArchivePatcher {
 			
 			list(earFS);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.log(Level.SEVERE, e.getLocalizedMessage(), e);
 		} finally {
 			
 		}
@@ -76,19 +80,18 @@ public class JavaArchivePatcher {
 
 	public void list(FileSystem earFS) throws IOException {
 		for (Path earElement : earFS.getRootDirectories()) {
-			System.out.println(earElement.toUri().toString());
+			logger.fine(earElement.toUri().toString());
 			Files.walk(earElement).forEach((p) -> {
 				URI elementUri = p.toUri();
 				String pathName = elementUri.toString();
-				System.out.println(pathName);	
+				logger.fine(pathName);	
 				if ( pathName.endsWith(".jar") || pathName.endsWith(".war")) {
 					try {
 						Path path = Paths.get(tempFolder, p.getFileName().toString());
 						Files.copy(p, path, StandardCopyOption.REPLACE_EXISTING);
 						list(open(path.toUri()));
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						logger.log(Level.SEVERE, e.getLocalizedMessage(), e);
 					}
 				}
 			});
